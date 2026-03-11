@@ -52,6 +52,16 @@
           aria-label="Texte à analyser"
           rows="8"
         ></textarea>
+        <!-- Tone selector (rewrite mode only) -->
+        <div class="tone-selector hidden" id="toneSelector" role="group" aria-label="Ton de la reformulation">
+          <span class="tone-label">Ton</span>
+          <div class="tone-pills">
+            <button class="tone-pill active" data-tone="standard" aria-pressed="true">Standard</button>
+            <button class="tone-pill" data-tone="professional" aria-pressed="false">Professionnel</button>
+            <button class="tone-pill" data-tone="informal" aria-pressed="false">Informel</button>
+          </div>
+        </div>
+
         <div class="input-footer">
           <span class="char-count" id="charCount" aria-live="polite">0 caractère</span>
           <button class="btn btn-primary" id="actionBtn" aria-label="Lancer la correction">
@@ -134,34 +144,59 @@
   <!-- API Key Modal -->
   <div class="modal-overlay hidden" id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal glass">
-      <div class="modal-icon" aria-hidden="true">⚿</div>
-      <h2 class="modal-title" id="modalTitle">Clé API Mistral</h2>
-      <p class="modal-desc">
-        Pour utiliser la reformulation, entrez votre clé API Mistral.
-        Elle sera stockée localement sur votre appareil.
-      </p>
-      <div class="modal-field">
-        <input
-          type="password"
-          id="apiKeyInput"
-          class="api-key-input"
-          placeholder="sk-••••••••••••••••••••••••"
-          autocomplete="off"
-          spellcheck="false"
-          aria-label="Clé API Mistral"
-        />
-        <button class="btn-show-key" id="toggleKeyVisibility" aria-label="Afficher/masquer la clé">
-          <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+
+      <!-- State: connected (clé déjà enregistrée) -->
+      <div id="modalStateConnected" class="hidden">
+        <div class="modal-connected-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h2 class="modal-title" id="modalTitle">Connecté à Mistral</h2>
+        <p class="modal-desc">Votre clé API est enregistrée et active sur cet appareil.</p>
+        <div class="modal-key-preview">
+          <span class="key-preview-icon" aria-hidden="true">⚿</span>
+          <span class="key-preview-text" id="keyPreviewText"></span>
+        </div>
+        <button class="btn-change-key" id="changeKeyBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Changer de clé API
         </button>
+        <div class="modal-actions" style="margin-top:4px">
+          <button class="btn btn-primary" id="connectedCloseBtn" style="flex:1;justify-content:center">Fermer</button>
+        </div>
       </div>
-      <p class="modal-link-text">
-        Pas encore de compte ?
-        <a href="https://console.mistral.ai" target="_blank" rel="noopener noreferrer" class="link">Créer un compte Mistral →</a>
-      </p>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="cancelKeyBtn">Annuler</button>
-        <button class="btn btn-primary" id="saveKeyBtn">Enregistrer</button>
+
+      <!-- State: enter key (première fois ou changement) -->
+      <div id="modalStateEnter">
+        <div class="modal-icon" aria-hidden="true">⚿</div>
+        <h2 class="modal-title" id="modalTitle">Clé API Mistral</h2>
+        <p class="modal-desc">
+          Pour utiliser la reformulation, entrez votre clé API Mistral.
+          Elle sera stockée localement sur votre appareil.
+        </p>
+        <div class="modal-field">
+          <input
+            type="password"
+            id="apiKeyInput"
+            class="api-key-input"
+            placeholder="sk-••••••••••••••••••••••••"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Clé API Mistral"
+          />
+          <button class="btn-show-key" id="toggleKeyVisibility" aria-label="Afficher/masquer la clé">
+            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <p class="modal-link-text">
+          Pas encore de compte ?
+          <a href="https://console.mistral.ai" target="_blank" rel="noopener noreferrer" class="link">Créer un compte Mistral →</a>
+        </p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="cancelKeyBtn">Annuler</button>
+          <button class="btn btn-primary" id="saveKeyBtn">Enregistrer</button>
+        </div>
       </div>
+
     </div>
   </div>
 

@@ -7,7 +7,8 @@
 
 // ---- State --------------------------------------------------
 const state = {
-  mode: 'correct', // 'correct' | 'rewrite'
+  mode: 'correct',     // 'correct' | 'rewrite'
+  tone: 'standard',    // 'standard' | 'professional' | 'informal'
   isLoading: false,
   lastResult: null,
   lastResultPlain: '',
@@ -38,6 +39,8 @@ const saveKeyBtn         = $('saveKeyBtn');
 const cancelKeyBtn       = $('cancelKeyBtn');
 const resetKeyBtn        = $('resetKeyBtn');
 const resetKeyWidget     = $('resetKeyWidget');
+const toneSelector       = $('toneSelector');
+const tonePills          = document.querySelectorAll('.tone-pill');
 const toggleKeyVis       = $('toggleKeyVisibility');
 const actionBtnLabel     = actionBtn.querySelector('.btn-label');
 
@@ -77,7 +80,8 @@ function setMode(mode) {
   actionBtnLabel.textContent = isRewrite ? 'Reformuler' : 'Corriger';
   actionBtn.setAttribute('aria-label', isRewrite ? 'Lancer la reformulation' : 'Lancer la correction');
 
-  // Show/hide reset key button
+  // Show/hide tone selector and reset key button
+  toggle(toneSelector, isRewrite);
   toggle(resetKeyWidget, isRewrite);
 
   // Reset result
@@ -100,6 +104,17 @@ modeToggle.addEventListener('keydown', (e) => {
     e.preventDefault();
     modeToggle.click();
   }
+});
+
+// ---- Tone selector ------------------------------------------
+tonePills.forEach((pill) => {
+  pill.addEventListener('click', () => {
+    state.tone = pill.dataset.tone;
+    tonePills.forEach((p) => {
+      p.classList.toggle('active', p === pill);
+      p.setAttribute('aria-pressed', p === pill ? 'true' : 'false');
+    });
+  });
 });
 
 // ---- Char counter -------------------------------------------
@@ -259,12 +274,17 @@ async function runRewrite(text, apiKey) {
   setResultState('loading');
   $('resultLoading').querySelector('.loading-text').textContent = 'Reformulation en cours…';
 
+  const toneInstructions = {
+    standard:     `Reformule dans un registre neutre et naturel, fluide et agréable à lire, sans être ni trop formel ni trop familier.`,
+    professional: `Reformule dans un registre professionnel et soutenu : vocabulaire précis et recherché, phrases bien structurées, ton formel adapté à un contexte d'entreprise ou académique.`,
+    informal:     `Reformule dans un registre familier et décontracté : langage spontané, tournures naturelles à l'oral, contractions acceptées (t'as, c'est, y'a…), ton proche et chaleureux.`,
+  };
+
   const systemPrompt = `Tu es un expert en langue française, maître de la rhétorique et de la stylistique. \
-Tu reformules les textes en conservant strictement le registre de l'auteur : \
-si le texte est familier tu restes familier, s'il est professionnel tu restes professionnel, \
-s'il est soutenu tu restes soutenu. \
-Tu améliores la fluidité, la clarté, la précision du vocabulaire et la structure des phrases. \
-Tu corriges au passage toutes les fautes. \
+Tu reformules les textes en corrigeant toutes les fautes d'orthographe, de grammaire et de ponctuation. \
+Tu améliores la fluidité, la clarté et la précision du vocabulaire. \
+Consigne de ton OBLIGATOIRE : ${toneInstructions[state.tone]} \
+Tu dois absolument respecter ce registre dans l'intégralité de ta reformulation. \
 Tu réponds UNIQUEMENT avec le texte reformulé, sans explication, sans introduction, sans commentaire.`;
 
   try {
@@ -423,11 +443,43 @@ function clearMistralKey() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+const modalStateConnected = $('modalStateConnected');
+const modalStateEnter     = $('modalStateEnter');
+const keyPreviewText      = $('keyPreviewText');
+const changeKeyBtn        = $('changeKeyBtn');
+const connectedCloseBtn   = $('connectedCloseBtn');
+
 function openApiKeyModal() {
-  apiKeyInput.value = '';
+  const existingKey = getMistralKey();
+  if (existingKey) {
+    // Show connected state
+    keyPreviewText.textContent = maskKey(existingKey);
+    show(modalStateConnected);
+    hide(modalStateEnter);
+    setTimeout(() => connectedCloseBtn.focus(), 100);
+  } else {
+    // Show enter-key state
+    apiKeyInput.value = '';
+    hide(modalStateConnected);
+    show(modalStateEnter);
+    setTimeout(() => apiKeyInput.focus(), 100);
+  }
+  clearModalKeyError();
   show(apiKeyModal);
   apiKeyModal.setAttribute('aria-hidden', 'false');
-  setTimeout(() => apiKeyInput.focus(), 100);
+}
+
+function openEnterKeyState() {
+  hide(modalStateConnected);
+  show(modalStateEnter);
+  apiKeyInput.value = '';
+  clearModalKeyError();
+  setTimeout(() => apiKeyInput.focus(), 80);
+}
+
+function maskKey(key) {
+  if (key.length <= 8) return '••••••••••••••••';
+  return key.slice(0, 7) + '••••••••••••' + key.slice(-4);
 }
 
 function closeApiKeyModal(saved) {
@@ -446,17 +498,81 @@ saveKeyBtn.addEventListener('click', () => {
     shake(apiKeyInput);
     return;
   }
-  saveMistralKey(key);
-  closeApiKeyModal(true);
-  setMode('rewrite');
+  validateAndSaveKey(key);
 });
+
+async function validateAndSaveKey(key) {
+  // Show loading state in the button
+  saveKeyBtn.disabled = true;
+  saveKeyBtn.textContent = 'Vérification…';
+  clearModalKeyError();
+
+  try {
+    const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: 'mistral-small-latest',
+        messages: [{ role: 'user', content: 'test' }],
+        max_tokens: 1,
+      }),
+    });
+
+    if (resp.status === 401) {
+      showModalKeyError('Clé API invalide. Vérifiez et réessayez.');
+      return;
+    }
+    if (!resp.ok && resp.status !== 200) {
+      // Any other error (rate limit, server error…) — accept the key anyway
+      // to not block the user on transient issues
+    }
+
+    // Key is valid
+    saveMistralKey(key);
+    closeApiKeyModal(true);
+    setMode('rewrite');
+  } catch {
+    showModalKeyError('Impossible de contacter Mistral. Vérifiez votre connexion.');
+  } finally {
+    saveKeyBtn.disabled = false;
+    saveKeyBtn.textContent = 'Enregistrer';
+  }
+}
+
+function showModalKeyError(msg) {
+  let el = document.getElementById('modalKeyError');
+  if (!el) {
+    el = document.createElement('p');
+    el.id = 'modalKeyError';
+    el.style.cssText = 'font-size:13px;color:#ef4444;text-align:center;margin-top:-6px;animation:fadeSlideIn .2s ease';
+    saveKeyBtn.closest('.modal-actions').before(el);
+  }
+  el.textContent = msg;
+  shake(apiKeyInput);
+  apiKeyInput.focus();
+}
+
+function clearModalKeyError() {
+  const el = document.getElementById('modalKeyError');
+  if (el) el.remove();
+}
 
 cancelKeyBtn.addEventListener('click', () => closeApiKeyModal(false));
 
-resetKeyBtn.addEventListener('click', () => {
+// Connected state: close button
+connectedCloseBtn.addEventListener('click', () => closeApiKeyModal(true));
+
+// Connected state: switch to enter-key state (change key)
+changeKeyBtn.addEventListener('click', () => {
   clearMistralKey();
-  openApiKeyModal();
+  openEnterKeyState();
 });
+
+// Bottom-right "Clé API" button — always opens the modal
+resetKeyBtn.addEventListener('click', () => openApiKeyModal());
 
 // Click outside modal closes it
 apiKeyModal.addEventListener('click', (e) => {
@@ -464,6 +580,7 @@ apiKeyModal.addEventListener('click', (e) => {
 });
 
 // Enter in key input = save
+apiKeyInput.addEventListener('input', clearModalKeyError);
 apiKeyInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') saveKeyBtn.click();
 });
