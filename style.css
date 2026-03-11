@@ -561,9 +561,17 @@ body.mode-rewrite .btn-primary:hover {
   font-size: 15px;
   line-height: 1.75;
   color: var(--text-primary);
-  white-space: pre-wrap;
   word-break: break-word;
   animation: fadeSlideIn var(--t-base) ease both;
+}
+
+/* Paragraphs in rewrite mode */
+.result-text .rewrite-para {
+  margin: 0 0 1em 0;
+}
+
+.result-text .rewrite-para:last-child {
+  margin-bottom: 0;
 }
 
 @keyframes fadeSlideIn {

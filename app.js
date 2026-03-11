@@ -268,6 +268,25 @@ function renderCorrections(text, matches) {
   resultText.querySelectorAll('.highlight').forEach(attachTooltip);
 }
 
+// ---- Rewrite text formatter ---------------------------------
+function formatRewriteText(text) {
+  // Split on double line breaks (paragraphs)
+  const paragraphs = text.split(/\n{2,}/);
+  return paragraphs
+    .map((para) => {
+      const trimmed = para.trim();
+      if (!trimmed) return '';
+      // Within a paragraph, convert single \n to <br>
+      const inner = trimmed
+        .split('\n')
+        .map((line) => escapeHtml(line))
+        .join('<br>');
+      return `<p class="rewrite-para">${inner}</p>`;
+    })
+    .filter(Boolean)
+    .join('');
+}
+
 // ---- Mistral reformulation ----------------------------------
 async function runRewrite(text, apiKey) {
   state.isLoading = true;
@@ -280,11 +299,12 @@ async function runRewrite(text, apiKey) {
     informal:     `Reformule dans un registre familier et décontracté : langage spontané, tournures naturelles à l'oral, contractions acceptées (t'as, c'est, y'a…), ton proche et chaleureux.`,
   };
 
-  const systemPrompt = `Tu es un expert en langue française, maître de la rhétorique et de la stylistique. \
-Tu reformules les textes en corrigeant toutes les fautes d'orthographe, de grammaire et de ponctuation. \
-Tu améliores la fluidité, la clarté et la précision du vocabulaire. \
-Consigne de ton OBLIGATOIRE : ${toneInstructions[state.tone]} \
-Tu dois absolument respecter ce registre dans l'intégralité de ta reformulation. \
+  const systemPrompt = `Tu es un expert en langue française, maître de la rhétorique et de la stylistique.
+Tu reformules les textes en corrigeant toutes les fautes d'orthographe, de grammaire et de ponctuation.
+Tu améliores la fluidité, la clarté et la précision du vocabulaire.
+Consigne de ton OBLIGATOIRE : ${toneInstructions[state.tone]}
+Tu dois absolument respecter ce registre dans l'intégralité de ta reformulation.
+MISE EN FORME OBLIGATOIRE : structure le texte avec des paragraphes séparés par une ligne vide (\\n\\n). Chaque idée ou étape distincte doit former son propre paragraphe. Ne fusionne jamais plusieurs idées dans un seul bloc. Si le texte original est une seule phrase courte, un seul paragraphe suffit.
 Tu réponds UNIQUEMENT avec le texte reformulé, sans explication, sans introduction, sans commentaire.`;
 
   try {
@@ -323,7 +343,7 @@ Tu réponds UNIQUEMENT avec le texte reformulé, sans explication, sans introduc
     if (!rewritten) throw new Error('Réponse vide de Mistral.');
 
     state.lastResultPlain = rewritten;
-    resultText.textContent = rewritten;
+    resultText.innerHTML = formatRewriteText(rewritten);
     setResultState('content');
     hide(legend);
     state.lastResult = { type: 'rewrite', text: rewritten };
