@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<!--
+  Plume — Icon Generator
+  Open this file in a browser, then click the buttons to download icon-192.png and icon-512.png.
+  Place them in the /icons/ folder, then delete this file.
+-->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Generate Icons</title>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #eee; display: flex; flex-direction: column; align-items: center; padding: 40px; gap: 20px; }
+    canvas { border-radius: 16px; }
+    button { padding: 10px 24px; border: none; border-radius: 8px; background: #4f8ef7; color: #fff; cursor: pointer; font-size: 15px; }
+    button:hover { background: #3a7ae0; }
+  </style>
+</head>
+<body>
+  <h1>Plume — Icon Generator</h1>
+  <canvas id="c192" width="192" height="192"></canvas>
+  <button onclick="download('c192','icon-192.png')">Télécharger icon-192.png</button>
+  <canvas id="c512" width="512" height="512"></canvas>
+  <button onclick="download('c512','icon-512.png')">Télécharger icon-512.png</button>
+
+  <script>
+    function drawIcon(canvas) {
+      const s = canvas.width;
+      const ctx = canvas.getContext('2d');
+
+      // Background gradient
+      const grad = ctx.createLinearGradient(0, 0, s, s);
+      grad.addColorStop(0, '#0d0d1a');
+      grad.addColorStop(1, '#1a1030');
+      ctx.fillStyle = grad;
+      roundRect(ctx, 0, 0, s, s, s * 0.22);
+      ctx.fill();
+
+      // Glow circle
+      const glow = ctx.createRadialGradient(s/2, s/2, 0, s/2, s/2, s*0.45);
+      glow.addColorStop(0, 'rgba(79,142,247,0.25)');
+      glow.addColorStop(1, 'rgba(139,92,246,0.05)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(s/2, s/2, s*0.45, 0, Math.PI*2);
+      ctx.fill();
+
+      // Letter "P" (Plume)
+      ctx.fillStyle = '#fff';
+      ctx.font = `${Math.round(s * 0.52)}px 'Georgia', serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('✦', s/2, s/2);
+
+      // Subtle border
+      roundRect(ctx, 1, 1, s-2, s-2, s * 0.22);
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.arcTo(x + w, y, x + w, y + r, r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h);
+      ctx.arcTo(x, y + h, x, y + h - r, r);
+      ctx.lineTo(x, y + r);
+      ctx.arcTo(x, y, x + r, y, r);
+      ctx.closePath();
+    }
+
+    function download(id, filename) {
+      const canvas = document.getElementById(id);
+      const a = document.createElement('a');
+      a.download = filename;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+
+    drawIcon(document.getElementById('c192'));
+    drawIcon(document.getElementById('c512'));
+  </script>
+</body>
+</html>

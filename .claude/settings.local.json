@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:\\\\Users\\\\C9NLFF4\\\\Documents\\\\Correctly\" && python -m http.server 8000)",
+      "Bash(cd \"C:\\\\Users\\\\C9NLFF4\\\\Documents\\\\Correctly\" && npx --yes serve . -p 8000)"
+    ]
+  }
+}

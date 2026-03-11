@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Correcteur et reformulateur de texte français" />
+  <meta name="theme-color" content="#4f8ef7" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>Plume — Correcteur Français</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Background blobs -->
+  <div class="bg-blobs" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <main class="bento-layout">
+
+    <!-- Header widget -->
+    <header class="widget widget-header" role="banner">
+      <div class="logo">
+        <span class="logo-icon" aria-hidden="true">✦</span>
+        <h1 class="logo-text">Plume</h1>
+      </div>
+      <p class="tagline">Correcteur &amp; reformulateur de français</p>
+    </header>
+
+    <!-- Toggle widget -->
+    <div class="widget widget-toggle" role="region" aria-label="Mode de l'application">
+      <div class="toggle-track" id="modeToggle" role="switch" aria-checked="false" tabindex="0" aria-label="Basculer entre Corriger et Reformuler">
+        <div class="toggle-thumb" aria-hidden="true"></div>
+        <span class="toggle-label label-left" data-mode="correct">Corriger</span>
+        <span class="toggle-label label-right" data-mode="rewrite">Reformuler</span>
+      </div>
+    </div>
+
+    <!-- Input widget -->
+    <div class="widget widget-input" role="region" aria-label="Zone de saisie">
+      <div class="widget-inner">
+        <textarea
+          id="inputText"
+          class="text-area"
+          placeholder="Écrivez ou collez votre texte à corriger…"
+          spellcheck="false"
+          aria-label="Texte à analyser"
+          rows="8"
+        ></textarea>
+        <div class="input-footer">
+          <span class="char-count" id="charCount" aria-live="polite">0 caractère</span>
+          <button class="btn btn-primary" id="actionBtn" aria-label="Lancer la correction">
+            <span class="btn-label">Corriger</span>
+            <span class="btn-hint">Ctrl+Entrée</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result widget -->
+    <div class="widget widget-result" id="resultWidget" role="region" aria-label="Zone de résultat" aria-live="polite">
+      <div class="widget-inner">
+        <!-- Empty state -->
+        <div class="result-empty" id="resultEmpty">
+          <span class="empty-icon" aria-hidden="true">◈</span>
+          <p>Le résultat apparaîtra ici</p>
+        </div>
+
+        <!-- Loading state -->
+        <div class="result-loading hidden" id="resultLoading" aria-label="Chargement en cours">
+          <div class="shimmer-lines" aria-hidden="true">
+            <div class="shimmer-line"></div>
+            <div class="shimmer-line short"></div>
+            <div class="shimmer-line"></div>
+            <div class="shimmer-line medium"></div>
+            <div class="shimmer-line short"></div>
+          </div>
+          <p class="loading-text">Analyse en cours…</p>
+        </div>
+
+        <!-- Error state -->
+        <div class="result-error hidden" id="resultError" role="alert">
+          <span class="error-icon" aria-hidden="true">⚠</span>
+          <p class="error-message" id="errorMessage">Une erreur est survenue.</p>
+          <button class="btn btn-ghost btn-small" id="retryBtn">Réessayer</button>
+        </div>
+
+        <!-- Content state -->
+        <div class="result-content hidden" id="resultContent">
+          <div class="result-text" id="resultText" aria-label="Résultat"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="result-footer hidden" id="resultFooter">
+          <!-- Legend (correct mode only) -->
+          <div class="legend hidden" id="legend" aria-label="Légende des couleurs">
+            <span class="legend-item legend-typo">Orthographe</span>
+            <span class="legend-item legend-grammar">Grammaire</span>
+            <span class="legend-item legend-punct">Ponctuation</span>
+            <span class="legend-item legend-style">Style</span>
+          </div>
+          <div class="result-actions">
+            <button class="btn btn-ghost btn-small" id="copyBtn" aria-label="Copier le résultat">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Copier</span>
+            </button>
+            <button class="btn btn-ghost btn-small" id="clearBtn" aria-label="Tout effacer">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              <span>Effacer</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reset key button -->
+    <div class="widget-reset-key hidden" id="resetKeyWidget" aria-label="Gestion de la clé API">
+      <button class="btn-reset-key" id="resetKeyBtn" aria-label="Réinitialiser la clé Mistral" title="Réinitialiser la clé Mistral">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v4M12 18v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M2 12h4M18 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        <span>Clé API</span>
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Tooltip -->
+  <div class="tooltip" id="tooltip" role="tooltip" aria-hidden="true"></div>
+
+  <!-- API Key Modal -->
+  <div class="modal-overlay hidden" id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal glass">
+      <div class="modal-icon" aria-hidden="true">⚿</div>
+      <h2 class="modal-title" id="modalTitle">Clé API Mistral</h2>
+      <p class="modal-desc">
+        Pour utiliser la reformulation, entrez votre clé API Mistral.
+        Elle sera stockée localement sur votre appareil.
+      </p>
+      <div class="modal-field">
+        <input
+          type="password"
+          id="apiKeyInput"
+          class="api-key-input"
+          placeholder="sk-••••••••••••••••••••••••"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Clé API Mistral"
+        />
+        <button class="btn-show-key" id="toggleKeyVisibility" aria-label="Afficher/masquer la clé">
+          <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <p class="modal-link-text">
+        Pas encore de compte ?
+        <a href="https://console.mistral.ai" target="_blank" rel="noopener noreferrer" class="link">Créer un compte Mistral →</a>
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="cancelKeyBtn">Annuler</button>
+        <button class="btn btn-primary" id="saveKeyBtn">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
